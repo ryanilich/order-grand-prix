@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Order Grand Prix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style id="gp-style">
+:root{
+  --bg:#E9EBEE; --surface:#FFFFFF; --surface-2:#F4F5F7; --ink:#17191C; --muted:#5D636B; --line:#D3D7DC;
+  --asphalt:#3A3D42; --kerb:#E10600; --purple:#8E3BC9; --green:#1E9E5A; --yellow:#C9940A; --team:#E10600;
+  --track-line:#FFFFFF;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1D1F23; --surface:#272A2F; --surface-2:#30343A; --ink:#F1F2F4; --muted:#A2A8B0; --line:#40454C;
+    --asphalt:#43474E; --purple:#B66BEA; --green:#3DD68C; --yellow:#F2C230;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1D1F23; --surface:#272A2F; --surface-2:#30343A; --ink:#F1F2F4; --muted:#A2A8B0; --line:#40454C;
+  --asphalt:#43474E; --purple:#B66BEA; --green:#3DD68C; --yellow:#F2C230;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Titillium Web","Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.45}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+.kerb{height:8px;background:repeating-linear-gradient(90deg,var(--kerb) 0 24px,#fff 24px 48px);border-radius:2px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin:14px 0 10px}
+h1{font-size:clamp(2rem,5vw,3.4rem);font-weight:900;line-height:.95;margin:0;letter-spacing:-.01em;font-style:italic}
+.day{font-size:1.05rem;color:var(--muted);margin:4px 0 0}
+.day strong{color:var(--ink)}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:8px;font-weight:600}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.golden{background:var(--yellow);color:#17191C;border-color:var(--yellow)}
+.btn.flag{background:repeating-conic-gradient(#17191C 0 25%,#fff 0 50%) left top/14px 14px repeat-y,#17191C;padding-left:28px;color:#fff;border-color:#17191C;font-weight:700}
+.golden-banner{display:none;margin:0 0 12px;padding:10px 14px;border-radius:8px;background:var(--yellow);color:#17191C;font-weight:700;font-size:1.1rem}
+.golden-banner.on{display:block}
+.grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+.panel h2{font-size:1.25rem;font-weight:700;margin:0 0 10px}
+.track-wrap{position:relative}
+svg.track{width:100%;height:auto;display:block}
+.lapline{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:6px}
+.lapline .big{font-size:1.6rem;font-weight:900;font-style:italic}
+.lapline .muted{color:var(--muted)}
+/* timing tower */
+.tower{list-style:none;margin:0;padding:0}
+.tower li{display:grid;grid-template-columns:2rem 6px minmax(0,1fr) auto;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line)}
+.tower li:last-child{border-bottom:0}
+.pos{font-weight:900;font-size:1.3rem;font-style:italic;text-align:center}
+.swatch{width:6px;height:34px;border-radius:2px}
+.dname{display:block;font-weight:700;font-size:1.1rem;line-height:1.3}
+.dstats{display:block}
+.dstats{color:var(--muted);font-size:.85rem}
+.pts{text-align:right}
+.pts b{font-size:1.4rem;font-weight:900}
+.gap{display:block;color:var(--muted);font-size:.8rem}
+/* pit wall */
+.bars{display:grid;gap:10px}
+.bar-label{display:flex;justify-content:space-between;font-size:.95rem}
+.bar{height:12px;background:var(--surface-2);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.bar>i{display:block;height:100%;background:var(--green);width:0;transition:width .5s ease}
+.bar.orders>i{background:var(--team)}
+.gridcheck{margin-top:10px;color:var(--muted)}
+.bonus{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--green);color:#0d2416;font-weight:700;display:none}
+.bonus.on{display:block}
+/* log */
+.drivers{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.drivers label{display:flex;align-items:center;gap:8px;padding:8px 12px;border:2px solid var(--line);border-radius:999px;font-weight:700;cursor:pointer;background:var(--surface-2)}
+.drivers input{position:absolute;opacity:0;pointer-events:none}
+.drivers label:has(input:checked){border-color:var(--ink);background:var(--surface)}
+.drivers label:has(input:focus-visible){outline:3px solid var(--yellow);outline-offset:2px}
+.dot{width:12px;height:12px;border-radius:50%}
+.actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.act{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);font-weight:700;text-align:left}
+.act:hover{border-color:var(--ink)}
+.act .p{font-weight:900;font-style:italic;white-space:nowrap}
+.act.boost{border-color:var(--purple);box-shadow:inset 0 0 0 1px var(--purple)}
+.act.boost .p{color:var(--purple)}
+.act.order{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.act.order.boost .p{color:var(--yellow)}
+.act.extra{background:var(--green);color:#0d2416;border-color:var(--green)}
+.btn.reset{border-color:var(--kerb);color:var(--kerb)}
+.logfoot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px;flex-wrap:wrap}
+.status{color:var(--muted);font-size:.9rem}
+/* feed */
+.feed{list-style:none;margin:0;padding:0;max-height:300px;overflow:auto}
+.feed li{padding:7px 0;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:baseline}
+.feed li:last-child{border-bottom:0}
+.feed time{color:var(--muted);font-size:.8rem;min-width:4.6rem}
+.feed .x2{font-size:.75rem;font-weight:700;background:var(--yellow);color:#17191C;border-radius:4px;padding:0 5px}
+.empty{color:var(--muted)}
+.stack{display:grid;gap:16px}
+/* dialogs */
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);padding:0;width:min(640px,calc(100vw - 24px));max-height:calc(100vh - 40px)}
+dialog::backdrop{background:rgba(10,10,12,.6)}
+.dlg{padding:20px;overflow:auto}
+.dlg h2{margin:0 0 6px;font-size:1.6rem;font-weight:900;font-style:italic}
+.field{display:grid;gap:4px;margin:10px 0}
+.field input,.field textarea{border:1px solid var(--line);border-radius:8px;background:var(--surface-2);padding:8px 10px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dlg-actions{display:flex;justify-content:space-between;gap:8px;margin-top:16px;flex-wrap:wrap}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;margin:16px 0}
+.step{flex:1;max-width:150px;text-align:center}
+.step .blk{border-radius:8px 8px 0 0;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:flex-start;justify-content:center;padding-top:8px;font-size:1.8rem;font-weight:900;font-style:italic}
+.step .who{font-weight:700;font-size:1.1rem}
+.step .sc{color:var(--muted);font-size:.9rem}
+.readonly .ctrl,.readonly .edit{display:none!important}
+.tvbtn{background:var(--surface);}
+.wrap.tv{max-width:1700px}
+.tv .ctrl{display:none!important}
+.tv h1{font-size:clamp(2.6rem,5vw,4.6rem)}
+.tv .day{font-size:1.5rem}
+.tv .panel h2{font-size:1.6rem}
+.tv .dname{font-size:1.5rem}
+.tv .dstats{font-size:1.05rem}
+.tv .pts b{font-size:2rem}
+.tv .pos{font-size:1.8rem}
+.tv .swatch{height:46px}
+.tv .bar{height:18px}
+.tv .bar-label,.tv .mini .bar-label{font-size:1.15rem}
+.tv .tn{font-size:1.3rem}
+.tv .feed li{font-size:1.1rem}
+.tv .lapline .big{font-size:2.1rem}
+.tv .hint{font-size:1.05rem}
+.weektbl{width:100%;border-collapse:collapse;font-size:.95rem}
+.weektbl th,.weektbl td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:center;vertical-align:top}
+.weektbl th{font-weight:700;color:var(--muted)}
+.weektbl th.nowday{color:var(--ink);box-shadow:inset 0 -3px 0 var(--kerb)}
+.weektbl td.nowday{background:var(--surface-2)}
+.weektbl td.nm{text-align:left;font-weight:700;white-space:nowrap}
+.weektbl .dp{font-weight:900;font-size:1.15rem;display:block}
+.weektbl .ds{color:var(--muted);font-size:.78rem;display:block;white-space:nowrap}
+.weektbl td.tot{font-weight:900;font-size:1.3rem}
+.scroll{overflow-x:auto}
+.hof{list-style:none;margin:0;padding:0}
+.hof li{border-bottom:1px solid var(--line);padding:8px 0}
+.hof li:last-child{border-bottom:0}
+.hof summary{cursor:pointer;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.hof summary b{font-weight:900}
+.hof .wk{color:var(--muted)}
+.hof ol{margin:6px 0 0;padding-left:1.4rem;color:var(--muted)}
+.tv .weektbl{font-size:1.15rem}.tv .weektbl .dp{font-size:1.5rem}.tv .weektbl .ds{font-size:.95rem}
+.linkbtn{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline}
+.yf{color:var(--yellow);font-size:.8em;letter-spacing:1px}
+.sk{font-size:.8em}
+.lic{display:inline-block;font-size:.75rem;font-weight:700;padding:0 6px;border-radius:4px;border:1px solid var(--line);margin-left:6px;vertical-align:middle;color:var(--muted)}
+.lic.ok{border-color:var(--green);color:var(--green)}
+.rules h3{margin:16px 0 4px;font-size:1.15rem}
+.rules p,.rules li{margin:4px 0}
+.rules ul{padding-left:1.2rem;margin:4px 0}
+.tv .lic{font-size:.95rem}
+.risk{display:block;font-size:.75rem;font-weight:700;color:var(--muted)}
+.risk.warn{color:var(--yellow)}
+.risk.safe{color:var(--green)}
+.tv .risk{font-size:.95rem}
+.dayoff{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.dayoff select{border:1px solid var(--line);border-radius:8px;background:var(--surface-2);padding:7px 8px;font:inherit;color:inherit}
+.updated{margin:2px 0 0;color:var(--muted);font-size:.9rem}
+.tv .updated{font-size:1.15rem}
+.fastest{margin:10px 0 0;font-weight:700}
+#celebrate{position:fixed;inset:0;z-index:50;display:none;place-items:center;background:rgba(10,10,12,.72);padding:24px;cursor:pointer}
+#celebrate.on{display:grid}
+#celebrate .card{background:var(--surface);color:var(--ink);border-radius:18px;padding:28px 36px;text-align:center;max-width:min(900px,92vw);border:10px solid transparent;border-image:repeating-conic-gradient(#17191C 0 25%,#fff 0 50%) 0 0/24px 24px 10;animation:pop .45s cubic-bezier(.2,1.4,.4,1)}
+#celebrate .big{font-size:clamp(2.6rem,8vw,6rem);font-weight:900;font-style:italic;line-height:1;margin:0}
+#celebrate .sub{font-size:clamp(1.2rem,3vw,2.2rem);font-weight:700;margin:12px 0 0}
+#celebrate .who{display:inline-block;width:.8em;height:.8em;border-radius:50%;margin-right:.3em;vertical-align:baseline}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion: reduce){#celebrate .card{animation:none}
+.bar>i{transition:none}}
+.today{display:grid;gap:12px}
+.trow{display:grid;grid-template-columns:minmax(0,7rem) minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:center}
+@media (max-width:520px){.trow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.trow .tn{grid-column:1/-1}}
+.tn{font-weight:700;display:flex;align-items:center;gap:8px}
+.mini .bar-label{font-size:.85rem}
+.bar>i.hit{background:var(--green)}
+.bar.calls>i{background:var(--purple)}
+.bar.props>i{background:var(--yellow)}
+.bar{position:relative}
+.bar .mark{position:absolute;top:-1px;bottom:-1px;width:2px;background:var(--ink);opacity:.5}
+.tick{color:var(--green);font-weight:900}
+.quick{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:12px}
+@media (max-width:520px){.quick{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.quick .field{margin:0}
+.quick input{width:100%;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);padding:8px 10px;font-weight:700;font-size:1.1rem}
+.quick label{font-size:.85rem;color:var(--muted)}
+.tabs{display:flex;gap:6px;margin:0 0 12px;border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:none;padding:6px 10px 8px;font-weight:700;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--kerb)}
+.hint{color:var(--muted);font-size:.9rem;margin:8px 0 0}
+.row4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media (max-width:520px){.row4,.row3{grid-template-columns:repeat(2,1fr)}}
+.spin-note{text-align:center;font-size:1.3rem;font-weight:900;font-style:italic;margin:6px 0 0}
+</style>
+</head>
+<body>
+<div id="app" class="wrap"></div>
+<script type="application/json" id="gp-state">{"drivers":[{"id":"d1","name":"Howard","color":"purple"},{"id":"d2","name":"Leila","color":"green"},{"id":"d3","name":"Richard","color":"yellow"}],"targets":{"dailyCalls":60,"dailyProps":4,"stretchProps":4,"orders":10},"points":{"call":1,"proposal":10,"order":30,"old":2,"extra":15,"callBonus":20,"propBonus":20},"events":[],"golden":false,"history":[],"goldenAt":1791794232280,"raceStart":1791794214576,"rules":{"missCalls":10,"missProps":10,"streakBonus":5,"licenceDays":3,"forfeit":"Has to make the team tea & coffee for the day"},"excused":{}}</script>
+<script id="gp-app">
+(function(){
+const ACTIONS=[
+  {k:'call',label:'Call made',short:'calls'},
+  {k:'proposal',label:'Proposal sent',short:'proposals'},
+  {k:'order',label:'Order signed',short:'orders'},
+  {k:'old',label:'Old data closed',short:'old data closed'},
+  {k:'extra',label:'Bonus',short:'bonuses'}
+];
+const DAYS={
+  1:{name:'Qualifying',text:'Calls score double today. Get your 60 in early.',boost:'call'},
+  2:{name:'Revival Day',text:'Old data closed scores double. Dig out those old leads.',boost:'old'},
+  3:{name:'Proposal Day',text:'Proposals score double. Get those quotes out.',boost:'proposal'},
+  4:{name:'Golden Hours',text:'Watch for surprise Golden Hours: double points on everything.',boost:null},
+  5:{name:'Final Lap',text:'The race closes this afternoon. Push the last orders over the line.',boost:null},
+  0:{name:'In the garage',text:'The race resumes Monday.',boost:null},
+  6:{name:'In the garage',text:'The race resumes Monday.',boost:null}
+};
+const COLORS=['purple','green','yellow','kerb','team','muted'];
+const DEF_POINTS={call:1,proposal:10,order:40,old:50,extra:15,callBonus:15,propBonus:15};
+let state=JSON.parse(document.getElementById('gp-state').textContent);
+let selected=state.drivers[0]?state.drivers[0].id:null;
+let mode='tap';
+let tv=false;try{tv=localStorage.getItem('gp-tv')==='1'}catch(e){}
+let ready=false,downloadsNs=null,artifactNs=null,useLocal=false,readOnly=false,saveTimer=null,saving=false;
+const app=document.getElementById('app');
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue('--'+v).trim()||'#888';
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>DAYS[new Date().getDay()];
+const dayKey=t=>new Date(t).toDateString();
+const P=()=>Object.assign({},DEF_POINTS,state.points||{});
+const isOrder=a=>a==='order';
+const PT=e=>(P()[e.a]||0)*e.n*(e.a==='extra'?1:(e.x||1));
+const DEF_RULES={missCalls:10,missProps:10,streakBonus:5,licenceDays:3,forfeit:'Buys the doughnuts on Monday'};
+const R=()=>Object.assign({},DEF_RULES,state.rules||{});
+function raceDays(){
+  // weekdays from race start to today; past = finished days
+  const start=new Date(state.raceStart||Date.now());start.setHours(0,0,0,0);
+  const end=new Date();end.setHours(0,0,0,0);const out=[];if(start>end)return out;
+  for(let d=new Date(start);d<=end&&out.length<40;d.setDate(d.getDate()+1)){
+    const wd=d.getDay();if(wd===0||wd===6)continue;
+    out.push({key:d.toDateString(),wd,past:d<end});
+  }
+  return out;
+}
+function dayRules(dayStats){
+  // dayStats: {driverId:{dayKey:{call,proposal}}} -> per driver per day adjustments
+  const tg=state.targets,r=R(),out={};
+  const days=raceDays();
+  const rs=new Date(state.raceStart||Date.now());const graceKey=rs.getHours()>=10?rs.toDateString():null;
+  state.drivers.forEach(d=>{
+    const o=out[d.id]={days:{},flags:0,licence:0,streak:0,streakPts:0,penPts:0};let streak=0;
+    days.forEach(dy=>{
+      const off=((state.excused||{})[d.id]||[]).includes(dy.key);
+      if(off){o.days[dy.key]={wd:dy.wd,pen:0,streakB:0,flags:0,off:true};return}
+      const st=(dayStats[d.id]&&dayStats[d.id][dy.key])||{call:0,proposal:0};
+      const grace=dy.key===graceKey;
+      const ch=st.call>=tg.dailyCalls,ph=st.proposal>=tg.dailyProps;
+      const a=o.days[dy.key]={wd:dy.wd,pen:0,streakB:0,flags:0};
+      if(dy.past&&!grace){if(!ch){a.pen-=r.missCalls;a.flags++}if(!ph){a.pen-=r.missProps;a.flags++}}
+      if(ch&&ph){streak++;o.licence++;if(streak>=2)a.streakB=r.streakBonus*(streak-1)}
+      else if(dy.past&&!grace)streak=0;
+      o.flags+=a.flags;o.penPts+=a.pen;o.streakPts+=a.streakB;
+    });
+    o.streak=streak;
+  });
+  return out;
+}
+function normalise(){
+  state.targets=Object.assign({dailyCalls:60,dailyProps:4,stretchProps:4,orders:10},state.targets||{});
+  state.points=P();
+  if(!Array.isArray(state.history))state.history=[];
+  if(!state.excused||typeof state.excused!=='object')state.excused={};
+  state.rules=R();
+  if(!state.raceStart)state.raceStart=state.events.length?Math.min(...state.events.map(e=>e.t)):Date.now();
+  state.events=(state.events||[]).filter(e=>ACTIONS.some(a=>a.k===e.a)).map(e=>Object.assign({n:1},e));
+}
+
+function totals(){
+  const p=P(),tg=state.targets,t={},now=dayKey(Date.now());
+  state.drivers.forEach(d=>t[d.id]={pts:0,call:0,proposal:0,order:0,old:0,extra:0,bonus:0,days:{},today:{call:0,proposal:0,order:0,old:0,extra:0,pts:0}});
+  state.events.forEach(e=>{
+    const r=t[e.d];if(!r)return;
+    r.pts+=PT(e);r[e.a]+=e.n;
+    const k=dayKey(e.t);const dd=r.days[k]||(r.days[k]={call:0,proposal:0});
+    if(e.a==='call')dd.call+=e.n;if(e.a==='proposal')dd.proposal+=e.n;
+    if(k===now){r.today[e.a]+=e.n;r.today.pts+=PT(e)}
+  });
+  Object.values(t).forEach(r=>{
+    Object.entries(r.days).forEach(([k,dd])=>{
+      let b=0;if(dd.call>=tg.dailyCalls)b+=p.callBonus;if(dd.proposal>=tg.dailyProps)b+=p.propBonus;
+      r.bonus+=b;r.pts+=b;if(k===now)r.today.pts+=b;
+    });
+  });
+  const ds={};Object.entries(t).forEach(([id,r])=>ds[id]=r.days);
+  const dr=dayRules(ds);
+  Object.entries(t).forEach(([id,r])=>{const o=dr[id];r.flags=o.flags;r.licence=o.licence;r.streak=o.streak;r.streakPts=o.streakPts;r.penPts=o.penPts;
+    r.pts+=o.streakPts+o.penPts;const td=o.days[now];if(td)r.today.pts+=td.streakB+td.pen;r.rules=o;});
+  return t;
+}
+function teamCounts(){
+  const c={call:0,proposal:0,order:0,old:0,extra:0,tCall:0,tProp:0};const now=dayKey(Date.now());
+  state.events.forEach(e=>{c[e.a]+=e.n;if(dayKey(e.t)===now){if(e.a==='call')c.tCall+=e.n;if(e.a==='proposal')c.tProp+=e.n}});
+  c.orders=c.order;return c;
+}
+function ranked(t){return state.drivers.slice().sort((a,b)=>t[b.id].pts-t[a.id].pts)}
+const GOLDEN_MS=3600000;
+function goldenOn(){return !!(state.golden&&state.goldenAt&&Date.now()-state.goldenAt<GOLDEN_MS)}
+function goldenLeft(){const ms=Math.max(0,state.goldenAt+GOLDEN_MS-Date.now());const m=Math.floor(ms/60000),s=Math.floor(ms%60000/1000);return m+':'+String(s).padStart(2,'0')}
+function mult(k){if(k==='extra')return 1;const d=today();return (goldenOn()||d.boost===k)?2:1}
+
+function trackSVG(tc){
+  const tg=state.targets;
+  return `<svg class="track" viewBox="0 0 600 300" role="img" aria-label="Race track showing each driver's position">
+    <path d="M300,30 H450 A120,120 0 0 1 450,270 H150 A120,120 0 0 1 150,30 Z" fill="none" stroke="${css('kerb')}" stroke-width="44" stroke-dasharray="14 14"/>
+    <path id="outer" d="M300,30 H450 A120,120 0 0 1 450,270 H150 A120,120 0 0 1 150,30 H300" fill="none" stroke="${css('asphalt')}" stroke-width="38"/>
+    <path d="M300,30 H450 A120,120 0 0 1 450,270 H150 A120,120 0 0 1 150,30 H300" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1.5" stroke-dasharray="8 10"/>
+    <path id="inner" d="M300,82 H430 A68,68 0 0 1 430,218 H170 A68,68 0 0 1 170,82 H300" fill="none" stroke="${css('asphalt')}" stroke-opacity=".55" stroke-width="16"/>
+    <g>${[0,1,2,3].map(i=>`<rect x="294" y="${11+i*9.5}" width="6" height="9.5" fill="${i%2?'#17191C':'#fff'}"/><rect x="300" y="${11+i*9.5}" width="6" height="9.5" fill="${i%2?'#fff':'#17191C'}"/>`).join('')}</g>
+    <text x="300" y="150" text-anchor="middle" font-family="Titillium Web, sans-serif" font-weight="900" font-style="italic" font-size="44" fill="${css('ink')}">LAP ${Math.min(tc.orders,tg.orders)}/${tg.orders}</text>
+    <text x="300" y="176" text-anchor="middle" font-family="Titillium Web, sans-serif" font-size="15" fill="${css('muted')}">Team car: one lap per order</text>
+    <text x="300" y="196" text-anchor="middle" font-family="Titillium Web, sans-serif" font-size="13" fill="${css('muted')}">Drivers: ${state.targets.dailyCalls} calls + ${state.targets.dailyProps} proposals today = one lap</text>
+    <g id="cars"></g>
+  </svg>`;
+}
+function placeCars(t,tc){
+  const svg=app.querySelector('svg.track');if(!svg)return;
+  const outer=svg.querySelector('#outer'),inner=svg.querySelector('#inner'),g=svg.querySelector('#cars');
+  const L=outer.getTotalLength(),Li=inner.getTotalLength();
+  const tg=state.targets;
+  const n=state.drivers.length;let out='';
+  state.drivers.forEach((d,i)=>{
+    const td=t[d.id].today,prog=(Math.min(td.call,tg.dailyCalls)/Math.max(1,tg.dailyCalls)+Math.min(td.proposal,tg.dailyProps)/Math.max(1,tg.dailyProps))/2;
+    const done=prog>=1;
+    const f=done?0.965:Math.max(0,Math.min(prog,0.94)),s=f*L,p=outer.getPointAtLength(s),q=outer.getPointAtLength(Math.min(s+1,L));
+    let nx=-(q.y-p.y),ny=q.x-p.x;const m=Math.hypot(nx,ny)||1;nx/=m;ny/=m;
+    const off=n>1?(i-(n-1)/2)*(30/(n-1)):0;const x=p.x+nx*off,y=p.y+ny*off;
+    out+=`<g><title>${esc(d.name)}: ${Math.round(prog*100)}% of today's lap</title>${done?`<circle cx="${x}" cy="${y}" r="15" fill="none" stroke="${css('green')}" stroke-width="3"/>`:''}<circle cx="${x}" cy="${y}" r="10" fill="${css(d.color)}" stroke="${css('surface')}" stroke-width="2.5"/><text x="${x}" y="${y+4}" text-anchor="middle" font-family="Titillium Web, sans-serif" font-weight="900" font-size="11" fill="#fff">${esc(d.name.charAt(0).toUpperCase())}</text></g>`;
+  });
+  const tf=Math.min(tc.orders/Math.max(1,state.targets.orders),0.985),tp=inner.getPointAtLength(tf*Li);
+  out+=`<g><rect x="${tp.x-14}" y="${tp.y-8}" width="28" height="16" rx="5" fill="${css('team')}" stroke="${css('surface')}" stroke-width="2"/><text x="${tp.x}" y="${tp.y+4}" text-anchor="middle" font-family="Titillium Web, sans-serif" font-weight="900" font-size="10" fill="#fff">TEAM</text></g>`;
+  g.innerHTML=out;
+}
+const offToday=id=>((state.excused||{})[id]||[]).includes(new Date().toDateString());
+const pct=(a,b)=>Math.min(100,Math.round(a/Math.max(1,b)*100));
+
+function render(){
+  const t=totals(),order=ranked(t),day=today(),tg=state.targets,p=P(),tc=teamCounts();
+  const lead=order.length?t[order[0].id].pts:0,n=state.drivers.length;
+  const feed=state.events.slice(-30).reverse();
+  const nameOf=id=>{const d=state.drivers.find(x=>x.id===id);return d?d.name:'A driver'};
+  const actOf=k=>ACTIONS.find(a=>a.k===k);
+  app.className='wrap'+(readOnly?' readonly':'')+(tv?' tv':'');
+  app.innerHTML=`
+  <div class="kerb" aria-hidden="true"></div>
+  <header class="top">
+    <div><h1>Order Grand Prix</h1><p class="day"><strong>${esc(day.name)}.</strong> ${esc(day.text)}</p><p class="updated">${state.events.length?`Last result logged ${new Date(Math.max(...state.events.map(e=>e.t))).toLocaleString([],{weekday:'short',hour:'2-digit',minute:'2-digit'})}`:''}${state.raceStart>Date.now()?`${state.events.length?' · ':''}Next race starts ${new Date(state.raceStart).toLocaleDateString(undefined,{weekday:'long'})}`:''}</p></div>
+    <div class="top-actions">
+      <button class="btn golden edit" id="goldenBtn" aria-pressed="${goldenOn()}">${goldenOn()?'End Golden Hour':'Start Golden Hour'}</button>
+      <button class="btn" id="rulesBtn">How it works</button>
+      <button class="btn flag" id="flagBtn">Chequered flag</button>
+      <button class="btn tvbtn" id="tvBtn" aria-pressed="${tv}">${tv?'Exit TV mode':'TV mode'}</button>
+      <button class="btn ctrl" id="setBtn">Race settings</button>
+      <button class="btn reset ctrl" id="resetBtn">New week</button>
+    </div>
+  </header>
+  <div class="golden-banner ${goldenOn()?'on':''}" role="status">Golden Hour is live: double points on everything. <span id="gLeft">${goldenOn()?goldenLeft()+' left':''}</span></div>
+  <div class="grid">
+    <div class="stack">
+      <section class="panel" aria-label="Circuit">
+        ${trackSVG(tc)}
+        <div class="lapline"><span class="big">${tc.orders} order${tc.orders===1?'':'s'} this week</span><span class="muted">${Math.max(0,tg.orders-tc.orders)} laps to the team finish</span></div>
+      </section>
+      <section class="panel" aria-label="Today's targets">
+        <h2>Today's targets</h2>
+        <div class="today">
+          ${state.drivers.map(d=>{const r=t[d.id].today,ch=r.call>=tg.dailyCalls,ph=r.proposal>=tg.dailyProps;return `<div class="trow mini">
+            <span class="tn"><span class="dot" style="background:${css(d.color)}"></span><span>${esc(d.name)}${[0,6].includes(new Date().getDay())?'':`<span class="risk ${offToday(d.id)?'':(ch&&ph?'safe':'warn')}">${offToday(d.id)?'Day off':(ch&&ph?'Safe ✓':'Flag risk')}</span>`}</span></span>
+            <div><div class="bar-label"><span>Calls ${ch?'<span class="tick" aria-label="target hit">✓</span>':''}</span><span><strong>${r.call}</strong> / ${tg.dailyCalls}</span></div><div class="bar calls"><i class="${ch?'hit':''}" style="width:${pct(r.call,tg.dailyCalls)}%"></i></div></div>
+            <div><div class="bar-label"><span>Proposals ${ph?'<span class="tick" aria-label="target hit">✓</span>':''}</span><span><strong>${r.proposal}</strong> / ${tg.dailyProps}${tg.stretchProps>tg.dailyProps?'–'+tg.stretchProps:''}</span></div><div class="bar props"><i class="${ph?'hit':''}" style="width:${pct(r.proposal,tg.stretchProps)}%"></i>${tg.stretchProps>tg.dailyProps?`<span class="mark" style="left:${pct(tg.dailyProps,tg.stretchProps)}%"></span>`:''}</div></div>
+          </div>`}).join('')}
+        </div>
+        <p class="hint">Hit ${tg.dailyCalls} calls in a day for +${p.callBonus} bonus points, and ${tg.dailyProps} proposals for +${p.propBonus}.</p>
+      </section>
+      <section class="panel" aria-label="Week so far">
+        <h2>Week so far</h2>
+        ${weekTableHTML(t)}
+        <div class="logfoot ctrl"><span class="hint" style="margin:0">Today's bars reset each morning. Everything logged stays here until you start a new week.</span><button class="btn" id="csvBtn" hidden>Download this week (CSV)</button></div>
+      </section>
+      <section class="panel ctrl" aria-label="Log results">
+        <h2>Log results</h2>
+        <div class="drivers" role="radiogroup" aria-label="Driver">
+          ${state.drivers.map(d=>`<label><input type="radio" name="drv" value="${d.id}" ${d.id===selected?'checked':''}><span class="dot" style="background:${css(d.color)}"></span>${esc(d.name)}</label>`).join('')}
+        </div>
+        <div class="tabs" role="tablist">
+          <button role="tab" id="tabTap" aria-selected="${mode==='tap'}">Tap as it happens</button>
+          <button role="tab" id="tabQuick" aria-selected="${mode==='quick'}">Enter totals</button>
+        </div>
+        ${mode==='tap'?`<div class="actions">
+          ${ACTIONS.map(a=>{const m=mult(a.k);return `<button class="act ${isOrder(a.k)?'order':''} ${a.k==='extra'?'extra':''} ${m>1?'boost':''}" data-act="${a.k}"><span>${a.label}</span><span class="p">+${p[a.k]*m}</span></button>`}).join('')}
+        </div>`:`<div class="quick">
+          ${ACTIONS.map(a=>`<div class="field"><label for="q_${a.k}">${a.k==='extra'?'Bonuses (+'+p.extra+' each)':a.label.replace(' made','s').replace(' sent','s').replace(' signed','s')}${mult(a.k)>1?' (x2)':''}</label><input id="q_${a.k}" type="number" inputmode="numeric" min="0" max="500" placeholder="0"></div>`).join('')}
+        </div>
+        <div class="logfoot" style="justify-content:flex-start"><button class="btn primary" id="quickAdd">Add to ${esc(nameOf(selected))}'s race</button></div>
+        <p class="hint">Use this to catch up in one go, for example 25 calls since lunch. It adds to today's numbers.</p>`}
+        <div class="dayoff">
+          <label for="offDay" class="hint" style="margin:0">Holiday or off sick?</label>
+          <select id="offDay">${raceDays().map(dy=>`<option value="${dy.key}" ${dy.key===new Date().toDateString()?'selected':''}>${new Date(dy.key).toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'short'})}</option>`).join('')}</select>
+          <button class="btn" id="offBtn">Mark ${esc(nameOf(selected))} off</button>
+        </div>
+        <div class="logfoot">
+          <button class="btn" id="undoBtn" ${state.events.length?'':'disabled'}>Undo last</button>
+          <span class="status" id="status" aria-live="polite">${saveLabel()}</span>
+        </div>
+      </section>
+    </div>
+    <div class="stack">
+      <section class="panel" aria-label="Timing tower">
+        <h2>Timing tower</h2>
+        <ol class="tower">
+          ${order.map((d,i)=>{const r=t[d.id];return `<li><span class="pos">${i+1}</span><span class="swatch" style="background:${css(d.color)}"></span><span><span class="dname">${esc(d.name)}${R().licenceDays?`<span class="lic ${r.licence>=R().licenceDays?'ok':''}" title="Days with both targets hit">Licence ${Math.min(r.licence,R().licenceDays)}/${R().licenceDays}</span>`:''}${r.streak>=2?`<span class="lic ok">🔥 ${r.streak}-day streak</span>`:''}${r.flags?`<span class="lic" style="color:var(--yellow);border-color:var(--yellow)">${r.flags} yellow flag${r.flags>1?'s':''}</span>`:''}</span><span class="dstats">${r.call} calls · ${r.proposal} proposals · ${r.order} order${r.order===1?'':'s'}${r.old?` · ${r.old} old data closed`:''}</span></span><span class="pts"><b>${r.pts}</b><span class="gap">${i===0?(r.pts?'Leader':'On the grid'):(lead-r.pts?'+'+(lead-r.pts)+' to leader':'Level')}</span></span></li>`}).join('')}
+        </ol>
+      </section>
+      <section class="panel" aria-label="Pit wall">
+        <h2>Pit wall: team today</h2>
+        <div class="bars">
+          ${[['Team calls',tc.tCall,tg.dailyCalls*n,'calls'],['Team proposals',tc.tProp,tg.dailyProps*n,'props'],['Team orders this week',tc.orders,tg.orders,'orders']].map(([l,a,b,c])=>`<div><div class="bar-label"><span>${l}</span><span><strong>${a}</strong> / ${b}</span></div><div class="bar ${c}" role="progressbar" aria-valuenow="${a}" aria-valuemax="${b}" aria-label="${l}"><i class="${a>=b?'hit':''}" style="width:${pct(a,b)}%"></i></div></div>`).join('')}
+        </div>
+        ${(()=>{const best=state.drivers.slice().sort((a,b)=>t[b.id].today.pts-t[a.id].today.pts)[0];return best&&t[best.id].today.pts>0?`<p class="fastest">Fastest today: <span class="dot" style="background:${css(best.color)};display:inline-block;margin:0 4px"></span>${esc(best.name)}, ${t[best.id].today.pts} pts</p>`:''})()}
+        <div class="bonus ${tc.tCall>=tg.dailyCalls*n&&tc.tProp>=tg.dailyProps*n?'on':''}">Full grid: the whole team hit today's calls and proposals.</div>
+      </section>
+      <section class="panel" aria-label="Race radio">
+        <h2>Race radio</h2>
+        ${feed.length?`<ul class="feed">${feed.map(e=>{const a=actOf(e.a);const what=e.a==='extra'?(e.n>1?`${e.n} bonuses`:'bonus'):(e.n>1?`${e.n} ${a.short}`:a.label.toLowerCase());return `<li><time>${new Date(e.t).toLocaleDateString(undefined,{weekday:'short'})} ${new Date(e.t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</time><span><strong>${esc(nameOf(e.d))}</strong> · ${esc(what)} <strong>+${PT(e)}</strong> ${e.x>1?'<span class="x2">x2</span>':''}</span></li>`}).join('')}</ul>`:`<p class="empty">Lights out. Log the first call to get the race started.</p>`}
+      </section>
+      <section class="panel" aria-label="Hall of fame">
+        <h2>Hall of fame</h2>
+        ${state.history.length?`<ul class="hof">${state.history.slice().reverse().map(w=>`<li><details><summary><span>${w.winner===undefined?`<b>${esc(w.standings[0]?w.standings[0].name:'No winner')}</b> won with ${w.standings[0]?w.standings[0].pts:0} pts`:(w.winner?`<b>${esc(w.winner)}</b> spun the wheel`:'No Super Licence: no spin')}</span><span class="wk">Week of ${esc(fmtDate(w.start))}</span></summary><ol>${w.standings.map(s=>`<li>${esc(s.name)}: ${s.pts} pts${s.flags?` · ${s.flags} yellow flags`:''} · ${s.call} calls · ${s.proposal} proposals · ${s.order+s.old} orders</li>`).join('')}</ol><p class="hint" style="margin:6px 0 0">Team orders: ${w.teamOrders}</p></details></li>`).join('')}</ul>`:`<p class="empty">Each finished week is saved here with its winner, so you can look back at everyone's numbers.</p>`}
+      </section>
+      <section class="panel" aria-label="Scoring">
+        <h2>Scoring</h2>
+        <p style="margin:0;color:var(--muted)">Call ${p.call} · Proposal ${p.proposal} · Order ${p.order} · Old data closed ${p.old} · Bonus button +${p.extra} · ${tg.dailyCalls} calls in a day +${p.callBonus} · ${tg.dailyProps} proposals in a day +${p.propBonus}. Boosted actions are outlined in purple. Miss a daily target and it's a yellow flag (−${R().missCalls}/−${R().missProps}). You need a Super Licence (both targets on ${R().licenceDays} days) to win the spin. Top of the timing tower on Friday spins the wheel.</p>
+      </section>
+    </div>
+  </div>
+  <dialog id="setDlg"></dialog>
+  <dialog id="flagDlg"></dialog>
+  <dialog id="resetDlg"></dialog>
+  <dialog id="rulesDlg"></dialog>`;
+  placeCars(t,tc);
+  bind();
+  detectMoments(t,tc);
+}
+function detectMoments(t,tc){
+  const tg=state.targets,p=P(),now=new Date().toDateString(),nm=id=>{const d=state.drivers.find(x=>x.id===id);return d||{name:'A driver',color:'muted'}};
+  const list=[];
+  state.events.forEach(e=>{
+    if(e.a==='order')list.push({k:'o'+e.t+e.d,big:'Order in!',d:e.d,sub:`signs an order · +${PT(e)}`});
+    if(e.a==='old')list.push({k:'d'+e.t+e.d,big:e.n>1?`${e.n} old leads closed!`:'Old lead closed!',d:e.d,sub:`clears out the old data · +${PT(e)}`});
+    if(e.a==='extra')list.push({k:'x'+e.t+e.d,big:'Bonus!',d:e.d,sub:`picks up a bonus · +${PT(e)}`});
+  });
+  state.drivers.forEach(d=>{const r=t[d.id].today;
+    if(r.call>=tg.dailyCalls)list.push({k:'c'+now+d.id,big:`${tg.dailyCalls} calls!`,d:d.id,sub:`hits today's calls target · +${p.callBonus}`});
+    if(t[d.id].streak>=2&&r.call>=tg.dailyCalls&&r.proposal>=tg.dailyProps)list.push({k:'s'+now+d.id,big:`${t[d.id].streak}-day streak!`,d:d.id,sub:`is on fire · +${R().streakBonus*(t[d.id].streak-1)}`});
+    if(r.proposal>=tg.dailyProps)list.push({k:'p'+now+d.id,big:`${tg.dailyProps} proposals!`,d:d.id,sub:`hits today's proposals target · +${p.propBonus}`});
+  });
+  const n=state.drivers.length;
+  if(n&&tc.tCall>=tg.dailyCalls*n&&tc.tProp>=tg.dailyProps*n)list.push({k:'g'+now,big:'Full grid!',sub:'The whole team hit today\'s calls and proposals'});
+  if(tc.orders>=tg.orders&&state.events.length)list.push({k:'f'+(state.events.find(e=>e.a==='order')||{t:0}).t,big:'Team finish!',sub:`${tg.orders} orders: the team car crosses the line`});
+  if(goldenOn())list.push({k:'h'+state.goldenAt,big:'Golden Hour!',sub:'Double points on everything. Go go go!'});
+  let seen=null;try{seen=JSON.parse(localStorage.getItem('gp-seen')||'null')}catch(e){}
+  const first=!Array.isArray(seen);if(first)seen=[];
+  const set=new Set(seen),fresh=list.filter(m=>!set.has(m.k));
+  fresh.forEach(m=>set.add(m.k));
+  try{localStorage.setItem('gp-seen',JSON.stringify([...set].slice(-600)))}catch(e){}
+  if(!first)fresh.slice(-4).forEach(m=>queue.push(m));
+  showNext();
+}
+const queue=[];let showing=false;
+function showNext(){
+  if(showing||!queue.length)return;
+  let el=document.getElementById('celebrate');
+  if(!el){el=document.createElement('div');el.id='celebrate';el.setAttribute('role','status');document.body.appendChild(el);el.addEventListener('click',()=>{el.classList.remove('on');showing=false;clearTimeout(el._t);showNext()})}
+  const m=queue.shift();showing=true;
+  const d=m.d?state.drivers.find(x=>x.id===m.d):null;
+  el.innerHTML=`<div class="card"><p class="big">${esc(m.big)}</p><p class="sub">${d?`<span class="who" style="background:${css(d.color)}"></span>${esc(d.name)} `:''}${esc(m.sub)}</p></div>`;
+  el.classList.add('on');
+  el._t=setTimeout(()=>{el.classList.remove('on');showing=false;showNext()},tv?7000:3500);
+}
+
+function addEvent(a,n){
+  if(!selected||!n)return;
+  const m=mult(a);state.events.push({d:selected,a,n,p:P()[a]*m*n,x:m,t:Date.now()});
+  if(state.events.length>5000)state.events=state.events.slice(-5000);
+}
+function bind(){
+  app.querySelectorAll('input[name=drv]').forEach(r=>r.addEventListener('change',e=>{selected=e.target.value;if(mode==='quick'){const b=app.querySelector('#quickAdd');if(b)b.textContent=`Add to ${state.drivers.find(d=>d.id===selected).name}'s race`}}));
+  app.querySelectorAll('.act').forEach(b=>b.addEventListener('click',()=>{addEvent(b.dataset.act,1);render();scheduleSave()}));
+  const tt=app.querySelector('#tabTap'),tq=app.querySelector('#tabQuick');
+  tt&&tt.addEventListener('click',()=>{mode='tap';render()});
+  tq&&tq.addEventListener('click',()=>{mode='quick';render();const f=app.querySelector('#q_call');f&&f.focus()});
+  const ob=app.querySelector('#offBtn'),os=app.querySelector('#offDay');
+  const syncOff=()=>{if(!ob||!os)return;const nm=(state.drivers.find(d=>d.id===selected)||{name:''}).name;const isOff=(state.excused[selected]||[]).includes(os.value);ob.textContent=isOff?`Remove ${nm}'s day off`:`Mark ${nm} off`};
+  if(ob&&os){syncOff();os.addEventListener('change',syncOff);app.querySelectorAll('input[name=drv]').forEach(r=>r.addEventListener('change',syncOff));
+    ob.addEventListener('click',()=>{const k=os.value;const list=state.excused[selected]||(state.excused[selected]=[]);const i=list.indexOf(k);if(i>=0)list.splice(i,1);else list.push(k);const keep=os.value;render();scheduleSave();const s2=app.querySelector('#offDay');if(s2){s2.value=keep;s2.dispatchEvent(new Event('change'))}})}
+  const qa=app.querySelector('#quickAdd');
+  qa&&qa.addEventListener('click',()=>{
+    let any=false;
+    ACTIONS.forEach(a=>{const v=Math.max(0,Math.min(500,parseInt(app.querySelector('#q_'+a.k).value,10)||0));if(v){addEvent(a.k,v);any=true}});
+    if(any){render();scheduleSave()}
+  });
+  app.querySelectorAll('.quick input').forEach(i=>i.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();qa.click()}}));
+  const u=app.querySelector('#undoBtn');u&&u.addEventListener('click',()=>{state.events.pop();render();scheduleSave()});
+  const g=app.querySelector('#goldenBtn');g&&g.addEventListener('click',()=>{if(goldenOn()){state.golden=false}else{state.golden=true;state.goldenAt=Date.now()}render();scheduleSave()});
+  app.querySelector('#tvBtn').addEventListener('click',()=>{tv=!tv;try{localStorage.setItem('gp-tv',tv?'1':'0')}catch(e){}render();if(tv&&document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(()=>{})}else if(!tv&&document.fullscreenElement){document.exitFullscreen().catch(()=>{})}});
+  app.querySelector('#flagBtn').addEventListener('click',openFlag);
+  app.querySelector('#rulesBtn').addEventListener('click',openRules);
+  const s=app.querySelector('#setBtn');s&&s.addEventListener('click',openSettings);
+  const rb=app.querySelector('#resetBtn');rb&&rb.addEventListener('click',askReset);
+  const cb=app.querySelector('#csvBtn');if(cb&&downloadsNs){cb.hidden=false;cb.addEventListener('click',async()=>{try{await downloadsNs.save({filename:'order-grand-prix-week-'+new Date().toISOString().slice(0,10)+'.csv',data:new Blob([weekCSV()],{type:'text/csv'})})}catch(e){if(e&&e.code==='unavailable'){downloadsNs=null;cb.hidden=true}}})}
+}
+
+function saveLabel(){return !ready?'Connecting…':(useLocal?'Saved in this browser only: the TV and other devices won\'t see these results':'Saved to the race')}
+function setStatus(txt){const s=app.querySelector('#status');if(s)s.textContent=txt}
+function scheduleSave(){
+  if(readOnly)return;setStatus('Saving shortly…');
+  try{sessionStorage.setItem('gp-pending',JSON.stringify(state))}catch(e){}
+  clearTimeout(saveTimer);saveTimer=setTimeout(save,3000);
+}
+function buildHTML(){
+  const cssText=document.getElementById('gp-style').textContent;
+  const js=document.getElementById('gp-app').textContent;
+  const json=JSON.stringify(state).replace(/</g,'\\u003c');
+  const S='<'+'/script>';
+  return '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n<title>Order Grand Prix</title>\n<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700;900&display=swap" rel="stylesheet">\n<style id="gp-style">'+cssText+'</style>\n</head>\n<body>\n<div id="app" class="wrap"></div>\n<script type="application/json" id="gp-state">'+json+S+'\n<script id="gp-app">'+js+S+'\n</body>\n</html>\n';
+}
+async function save(){
+  if(saving){scheduleSave();return}
+  if(useLocal||!artifactNs){
+    try{localStorage.setItem('gp-state',JSON.stringify(state));setStatus(saveLabel())}catch(e){setStatus('Not saved: storage unavailable')}
+    try{sessionStorage.removeItem('gp-pending')}catch(e){}
+    return;
+  }
+  saving=true;setStatus('Saving…');
+  try{sessionStorage.removeItem('gp-pending')}catch(e){}
+  try{await artifactNs.publish(buildHTML())}
+  catch(err){
+    const c=err&&err.code;
+    if(c==='conflict'){}
+    else if(['not_writer','not_granted','consent_required','not_declared','capability_disabled','capability_removed'].includes(c)){readOnly=true;render()}
+    else{try{sessionStorage.setItem('gp-pending',JSON.stringify(state))}catch(e){}setStatus(c==='rate_limited'?'Busy, retrying shortly':'Not saved yet, will retry');saving=false;clearTimeout(saveTimer);saveTimer=setTimeout(save,c==='rate_limited'?8000:5000);return}
+  }
+  saving=false;
+}
+
+function openSettings(){
+  const dlg=app.querySelector('#setDlg'),tg=state.targets,p=P();
+  dlg.innerHTML=`<form class="dlg" method="dialog">
+    <h2>Race settings</h2>
+    <div id="drvFields">${state.drivers.map((d,i)=>`<div class="field"><label for="dn${i}">Driver ${i+1}</label><input id="dn${i}" value="${esc(d.name)}" maxlength="24"></div>`).join('')}</div>
+    <button type="button" class="btn" id="addDrv" ${state.drivers.length>=6?'disabled':''}>Add a driver</button>
+    <h3 style="margin:18px 0 0">Targets</h3>
+    <div class="row4">
+      <div class="field"><label for="tdc">Calls a day</label><input id="tdc" type="number" min="1" value="${tg.dailyCalls}"></div>
+      <div class="field"><label for="tdp">Proposals a day</label><input id="tdp" type="number" min="1" value="${tg.dailyProps}"></div>
+      <div class="field"><label for="tsp">Stretch proposals</label><input id="tsp" type="number" min="1" value="${tg.stretchProps}"></div>
+      <div class="field"><label for="to">Team orders a week</label><input id="to" type="number" min="1" value="${tg.orders}"></div>
+    </div>
+    <h3 style="margin:18px 0 0">Points</h3>
+    <div class="row3">
+      <div class="field"><label for="pc">Call</label><input id="pc" type="number" min="0" value="${p.call}"></div>
+      <div class="field"><label for="pp">Proposal</label><input id="pp" type="number" min="0" value="${p.proposal}"></div>
+      <div class="field"><label for="po">Order</label><input id="po" type="number" min="0" value="${p.order}"></div>
+      <div class="field"><label for="pd">Old data closed</label><input id="pd" type="number" min="0" value="${p.old}"></div>
+      <div class="field"><label for="px">Bonus button</label><input id="px" type="number" min="0" value="${p.extra}"></div>
+      <div class="field"><label for="pcb">Daily calls bonus</label><input id="pcb" type="number" min="0" value="${p.callBonus}"></div>
+      <div class="field"><label for="ppb">Daily proposals bonus</label><input id="ppb" type="number" min="0" value="${p.propBonus}"></div>
+    </div>
+    <h3 style="margin:18px 0 0">Streaks, yellow flags and the Super Licence</h3>
+    <div class="row4">
+      <div class="field"><label for="rmc">Missed calls target</label><input id="rmc" type="number" min="0" value="${R().missCalls}"></div>
+      <div class="field"><label for="rmp">Missed proposals target</label><input id="rmp" type="number" min="0" value="${R().missProps}"></div>
+      <div class="field"><label for="rsb">Streak bonus step</label><input id="rsb" type="number" min="0" value="${R().streakBonus}"></div>
+      <div class="field"><label for="rld">Licence days needed</label><input id="rld" type="number" min="0" max="5" value="${R().licenceDays}"></div>
+    </div>
+    <div class="field"><label for="rfo">Penalty for most yellow flags</label><input id="rfo" maxlength="80" value="${esc(R().forfeit)}"></div>
+    <p class="hint">Missed-target values are points taken off. Set them to 0 to switch penalties off, or licence days to 0 to let anyone win.</p>
+    <div class="dlg-actions">
+      <button type="button" class="btn" id="newRace">Start a new race</button>
+      <span style="display:flex;gap:8px"><button type="button" class="btn" id="cancelSet">Cancel</button><button type="button" class="btn primary" id="saveSet">Save settings</button></span>
+    </div>
+  </form>`;
+  dlg.showModal();
+  dlg.querySelector('#cancelSet').onclick=()=>dlg.close();
+  dlg.querySelector('#addDrv').onclick=()=>{const w=dlg.querySelector('#drvFields'),i=w.children.length;if(i>=6)return;w.insertAdjacentHTML('beforeend',`<div class="field"><label for="dn${i}">Driver ${i+1}</label><input id="dn${i}" maxlength="24" placeholder="Name"></div>`);w.lastElementChild.querySelector('input').focus()};
+  dlg.querySelector('#saveSet').onclick=()=>{
+    const names=[...dlg.querySelectorAll('#drvFields input')].map(x=>x.value.trim());const drivers=[];
+    names.forEach((nm,i)=>{if(!nm)return;const ex=state.drivers[i];drivers.push(ex?{...ex,name:nm}:{id:'d'+Date.now().toString(36)+i,name:nm,color:COLORS[i%COLORS.length]})});
+    if(!drivers.length)return;state.drivers=drivers;if(!drivers.find(d=>d.id===selected))selected=drivers[0].id;
+    const v=(id,min)=>Math.max(min,parseInt(dlg.querySelector('#'+id).value,10)||min);
+    state.targets={dailyCalls:v('tdc',1),dailyProps:v('tdp',1),stretchProps:Math.max(v('tsp',1),v('tdp',1)),orders:v('to',1)};
+    state.rules={missCalls:v('rmc',0),missProps:v('rmp',0),streakBonus:v('rsb',0),licenceDays:Math.min(5,v('rld',0)),forfeit:(dlg.querySelector('#rfo').value.trim()||DEF_RULES.forfeit).slice(0,80)};
+    state.points={call:v('pc',0),proposal:v('pp',0),order:v('po',0),old:v('pd',0),extra:v('px',0),callBonus:v('pcb',0),propBonus:v('ppb',0)};
+    dlg.close();render();scheduleSave();
+  };
+  dlg.querySelector('#newRace').onclick=()=>{dlg.close();askReset()};
+}
+
+const fmtDate=t=>new Date(t).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
+function weekData(){
+  const p=P(),tg=state.targets,W={};
+  state.drivers.forEach(d=>{W[d.id]={};for(let i=1;i<=5;i++)W[d.id][i]={pts:0,call:0,proposal:0,order:0}});
+  const daily={};
+  state.events.forEach(e=>{const wd=new Date(e.t).getDay();const r=W[e.d];if(!r)return;const c=r[wd];
+    if(c){c.pts+=PT(e);if(e.a==='call')c.call+=e.n;if(e.a==='proposal')c.proposal+=e.n;if(e.a==='order'||e.a==='old')c.order+=e.n}
+    const k=e.d+'|'+new Date(e.t).toDateString();const dd=daily[k]||(daily[k]={d:e.d,wd,call:0,proposal:0});
+    if(e.a==='call')dd.call+=e.n;if(e.a==='proposal')dd.proposal+=e.n;});
+  Object.values(daily).forEach(dd=>{const c=W[dd.d]&&W[dd.d][dd.wd];if(!c)return;if(dd.call>=tg.dailyCalls)c.pts+=p.callBonus;if(dd.proposal>=tg.dailyProps)c.pts+=p.propBonus});
+  const t=totals();
+  state.drivers.forEach(d=>{const o=t[d.id].rules;Object.values(o.days).forEach(a=>{const c=W[d.id][a.wd];if(!c)return;c.pts+=a.pen+a.streakB;c.flags=(c.flags||0)+a.flags;if(a.off)c.off=true;c.streakB=(c.streakB||0)+a.streakB})});
+  return W;
+}
+function weekTableHTML(t){
+  const W=weekData(),nd=new Date().getDay(),names=['Mon','Tue','Wed','Thu','Fri'];
+  const order=ranked(t);
+  return `<div class="scroll"><table class="weektbl"><thead><tr><th scope="col" style="text-align:left">Driver</th>${names.map((n,i)=>`<th scope="col" class="${nd===i+1?'nowday':''}">${n}</th>`).join('')}<th scope="col">Week</th></tr></thead><tbody>
+  ${order.map(d=>`<tr><td class="nm"><span class="dot" style="background:${css(d.color)};display:inline-block;margin-right:6px"></span>${esc(d.name)}</td>${[1,2,3,4,5].map(i=>{const c=W[d.id][i];const has=c.pts||c.call||c.proposal||c.order||c.flags;return `<td class="${nd===i?'nowday':''}">${c.off&&!has?'<span class="ds">Day off</span>':has?`<span class="dp">${c.pts}${c.flags?` <span class="yf" title="${c.flags} target(s) missed" aria-label="${c.flags} target(s) missed">${'▮'.repeat(c.flags)}</span>`:''}${c.streakB?` <span class="sk" title="Streak bonus">🔥</span>`:''}</span><span class="ds">${c.call} calls</span><span class="ds">${c.proposal} props · ${c.order} ord</span>`:'<span class="ds">–</span>'}</td>`}).join('')}<td class="tot">${t[d.id].pts}</td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+function archiveWeek(){
+  if(!state.events.length)return;
+  const t=totals(),tc=teamCounts();
+  const order=ranked(t),ld=R().licenceDays,win=order.find(d=>t[d.id].licence>=ld&&t[d.id].pts>0);
+  state.history.push({start:state.raceStart||Math.min(...state.events.map(e=>e.t)),end:Date.now(),teamOrders:tc.orders,winner:win?win.name:null,
+    standings:ranked(t).map(d=>({name:d.name,pts:t[d.id].pts,flags:t[d.id].flags,licence:t[d.id].licence,call:t[d.id].call,proposal:t[d.id].proposal,order:t[d.id].order,old:t[d.id].old}))});
+  if(state.history.length>104)state.history=state.history.slice(-104);
+}
+function weekCSV(){
+  const W=weekData(),t=totals(),rows=[['Driver','Day','Points','Calls','Proposals','Orders']];
+  const names=['Mon','Tue','Wed','Thu','Fri'];
+  ranked(t).forEach(d=>{[1,2,3,4,5].forEach(i=>{const c=W[d.id][i];rows.push([d.name,names[i-1],c.pts,c.call,c.proposal,c.order])});rows.push([d.name,'Week total',t[d.id].pts,t[d.id].call,t[d.id].proposal,t[d.id].order+t[d.id].old])});
+  return rows.map(r=>r.map(v=>/[",\n]/.test(String(v))?'"'+String(v).replace(/"/g,'""')+'"':v).join(',')).join('\n');
+}
+function openRules(){
+  const dlg=app.querySelector('#rulesDlg'),p=P(),tg=state.targets,r=R();
+  dlg.innerHTML=`<div class="dlg rules">
+    <h2>How the Grand Prix works</h2>
+    <p>One race, Monday to Friday. Score points, move your car round the track, and finish top with a Super Licence to spin the wheel.</p>
+    <h3>Points</h3>
+    <ul><li>Call made: ${p.call}</li><li>Proposal sent: ${p.proposal}</li><li>Order signed: ${p.order}</li><li>Old data closed: ${p.old}</li><li>Bonus from the boss: ${p.extra}</li></ul>
+    <h3>Daily targets</h3>
+    <ul><li>${tg.dailyCalls} calls a day: +${p.callBonus}</li><li>${tg.dailyProps} proposals a day: +${p.propBonus}</li><li>Hit both on back-to-back days to build a streak 🔥: +${r.streakBonus} on day two, +${r.streakBonus*2} on day three, and so on.</li></ul>
+    <h3>Miss a target, take a yellow flag</h3>
+    <ul><li>Finish a day under ${tg.dailyCalls} calls: yellow flag and −${r.missCalls} points.</li><li>Finish a day under ${tg.dailyProps} proposals: yellow flag and −${r.missProps} points.</li><li>Missing a day also breaks your streak.</li></ul>
+    <h3>Super Licence</h3>
+    <p>To win the wheel spin you need a Super Licence: hit both daily targets on at least ${r.licenceDays} days this week. Top points without a licence doesn't count, so the spin goes to the highest-placed driver who has one.</p>
+    <h3>Penalty</h3>
+    <p>Most yellow flags at the end of the week: ${esc(r.forfeit)}.</p>
+    <h3>Race days</h3>
+    <ul><li>Monday, Qualifying: calls score double</li><li>Tuesday, Revival Day: old data closed scores double</li><li>Wednesday, Proposal Day: proposals score double</li><li>Thursday, Golden Hours: surprise double points</li></ul><p>Golden Hours can also be called on any day. Each one lasts an hour, with a countdown on the board.</p><ul style="display:none"><li>Friday, Final Lap: race closes in the afternoon</li></ul>
+    <h3>The team car</h3>
+    <p>Every order signed moves the team car one lap; old data closed scores points but doesn't move the team car. Your own car laps the track as you work toward ${tg.dailyCalls} calls and ${tg.dailyProps} proposals each day. ${tg.orders} laps is the weekly team target, and the Full Grid celebration appears when everyone hits their numbers on the same day.</p>
+    <div class="dlg-actions"><span></span><button class="btn primary" id="rulesClose">Got it</button></div>
+  </div>`;
+  dlg.showModal();dlg.querySelector('#rulesClose').onclick=()=>dlg.close();
+}
+function nextRaceStart(){
+  const n=new Date(),wd=n.getDay();
+  if(wd===6||wd===0||(wd===5&&n.getHours()>=12)){const m=new Date(n);m.setHours(0,0,0,0);m.setDate(m.getDate()+((8-wd)%7||7));return m.getTime()}
+  return n.getTime();
+}
+function askReset(){
+  const dlg=app.querySelector('#resetDlg');
+  dlg.innerHTML=`<div class="dlg">
+    <h2>Start a new week?</h2>
+    <p style="margin:0">This week's standings are saved to the Hall of fame, then the board clears for a fresh race. Driver names, targets and points stay as they are.</p>
+    <div class="dlg-actions"><button class="linkbtn" id="resetWipe">Clear without saving</button><span style="display:flex;gap:8px"><button class="btn" id="resetNo">Keep this week</button><button class="btn primary" id="resetYes" style="background:var(--kerb);border-color:var(--kerb);color:#fff">Save and start new week</button></span></div>
+  </div>`;
+  dlg.showModal();
+  dlg.querySelector('#resetNo').onclick=()=>dlg.close();
+  dlg.querySelector('#resetYes').onclick=()=>{archiveWeek();state.events=[];state.excused={};state.raceStart=nextRaceStart();state.golden=false;dlg.close();render();scheduleSave();setStatus(state.raceStart>Date.now()?'Week saved. The new race starts on Monday.':'Week saved. The new race starts now.')};
+  dlg.querySelector('#resetWipe').onclick=()=>{state.events=[];state.excused={};state.raceStart=nextRaceStart();state.golden=false;dlg.close();render();scheduleSave();setStatus('Board cleared.')};
+  dlg.querySelector('#resetNo').focus();
+}
+function openFlag(){
+  const t=totals(),order=ranked(t),dlg=app.querySelector('#flagDlg');
+  const pod=[order[1],order[0],order[2]],h=[90,130,64],lbl=['2','1','3'];
+  const tc=teamCounts();const has=order[0]&&t[order[0].id].pts>0;const lic=order.find(d=>t[d.id].licence>=R().licenceDays&&t[d.id].pts>0);const maxF=Math.max(0,...order.map(d=>t[d.id].flags||0));const forf=maxF?order.filter(d=>t[d.id].flags===maxF):[];
+  dlg.innerHTML=`<div class="dlg">
+    <h2>Chequered flag</h2>
+    <div class="podium">${pod.map((d,i)=>d?`<div class="step"><div class="who">${esc(d.name)}</div><div class="sc">${t[d.id].pts} pts${R().licenceDays?(t[d.id].licence>=R().licenceDays?' · Licence ✓':' · No licence'):''}</div><div class="blk" style="height:${h[i]}px;border-top:4px solid ${css(d.color)}">${lbl[i]}</div></div>`:'').join('')}</div>
+    <p class="spin-note">${!has?'No points on the board yet.':(lic?esc(lic.name)+(lic===order[0]?' wins':' takes the spin with a Super Licence')+' and spins the wheel!':'No one earned a Super Licence this week, so the wheel stays still.')}</p>
+    ${forf.length?`<p style="text-align:center;margin:8px 0 0"><strong>Penalty:</strong> ${forf.map(d=>esc(d.name)).join(' and ')} ${forf.length>1?'share':'takes'} it with ${maxF} yellow flag${maxF>1?'s':''}. ${esc(R().forfeit)}.</p>`:''}
+    <p style="text-align:center;color:var(--muted);margin:6px 0 0">Team finished on lap ${Math.min(tc.orders,state.targets.orders)} of ${state.targets.orders}${tc.orders>=state.targets.orders?': target hit.':'.'}</p>
+    <div class="dlg-actions"><button class="btn ctrl" id="flagNew">Save week and start a new one</button><button class="btn" id="closeFlag">Close</button></div>
+  </div>`;
+  dlg.showModal();dlg.querySelector('#closeFlag').onclick=()=>dlg.close();const fn=dlg.querySelector('#flagNew');if(fn)fn.onclick=()=>{dlg.close();askReset()};
+}
+
+normalise();
+try{const pd=sessionStorage.getItem('gp-pending');if(pd){state=JSON.parse(pd);normalise()}}catch(e){}
+render();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',render);
+let lastDay=new Date().toDateString(),lastGolden=goldenOn();
+setInterval(()=>{
+  const dk=new Date().toDateString(),g=goldenOn();
+  if((dk!==lastDay||g!==lastGolden)&&!app.querySelector('dialog[open]')){lastDay=dk;lastGolden=g;render();return}
+  
+  const gl=document.getElementById('gLeft');if(gl&&g)gl.textContent=goldenLeft()+' left';
+},1000);
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>render());
+(()=>{
+  useLocal=true;
+  ready=true;
+  setStatus(saveLabel());
+  try{
+    const s=localStorage.getItem('gp-state');
+    if(s){state=JSON.parse(s);normalise();render()}
+  }catch(e){}
+  try{if(sessionStorage.getItem('gp-pending'))scheduleSave()}catch(e){}
+})();
+})();
+</script>
+</body>
+</html>
